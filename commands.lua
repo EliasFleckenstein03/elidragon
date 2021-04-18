@@ -26,7 +26,7 @@ minetest.register_chatcommand("message", {
 })
 minetest.register_chatcommand("colormsg", {
 	params = "[[<player>-]color>-]<message>",
-	description = "Send a message as the server. [deprecated, replaced my the message command]",
+	description = "Send a message as the server. [deprecated, replaced by the message command]",
 	privs = {server = true},
 	func = function(name, param)
         elidragon.message(param)
