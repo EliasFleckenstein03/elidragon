@@ -43,6 +43,8 @@ elidragon.ranks = {
 	},
 }
 
+local s = minetest.get_mod_storage()
+local deferred = minetest.deserialize(s:get_string("deferred_rank_changes"))
 
 function elidragon.get_rank(player)
     local rank = player:get_meta():get_string("elidragon:rank")
@@ -104,16 +106,7 @@ minetest.register_chatcommand("rank", {
 	description = "Set a player's rank (admin|developer|moderator|helper|builder|vip|player)",
 	privs = {privs = true},
 	func = function(name, param)
-		local target = param:split(" ")[1] or ""
-		local rank = param:split(" ")[2] or ""
-		local target_ref = minetest.get_player_by_name(target)
-		local rank_ref = elidragon.get_rank_by_name(rank)
-		if not rank_ref then 
-            return false, "Invalid Rank: " .. rank
-        elseif not target_ref then
-			return false, "Player not found"
-		else
-			target_ref:get_meta():set_string("elidragon:rank", rank)
+		local set_rank = function()
 			local privs = {}
 			for _, r in pairs(elidragon.ranks) do
 				for k, v in pairs(r.privs) do
@@ -125,7 +118,34 @@ minetest.register_chatcommand("rank", {
 			end
 			minetest.set_player_privs(target, privs)
 			minetest.chat_send_all(target .. " is now a " .. minetest.colorize(rank_ref.color, rank_ref.name))
+		end
+
+		local target = param:split(" ")[1] or ""
+		local rank = param:split(" ")[2] or ""
+		local target_ref = minetest.get_player_by_name(target)
+		local rank_ref = elidragon.get_rank_by_name(rank)
+		if not rank_ref then 
+			return false, "Invalid Rank: " .. rank
+		elseif not target_ref then
+			deferred[target] = rank
+			set_rank()
+		else
+			target_ref:get_meta():set_string("elidragon:rank", rank)
+			set_rank()
 			elidragon.update_nametag(target_ref)
 		end
 	end,
 })
+
+minetest.register_on_joinplayer(function(player)
+	local name = player:get_player_name()
+	if deferred[name] then
+		player:get_meta():set_string("elidragon:rank", deferred[name])
+		elidragon.update_nametag(player)
+		deferred[name] = nil
+	end
+end)
+
+minetest.register_on_shutdown(function()
+	s:set_string("deferred_rank_changes", minetest.serialize(deferred))
+end)
