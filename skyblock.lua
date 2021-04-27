@@ -308,6 +308,8 @@ minetest.register_craft({
 	}
 })
 
+-- commands
+
 minetest.register_chatcommand("island", {
 	params = "",
 	description = "Teleport to your Island",
@@ -315,5 +317,22 @@ minetest.register_chatcommand("island", {
 		local player = minetest.get_player_by_name(name)
 		if not player then return end
 		elidragon.skyblock.spawn_player(player)
+	end,
+})
+
+minetest.register_chatcommand("set_skyblock_spawn", {
+	params = "<name> <x> <y> <z>",
+	description = "Set new skyblock spawn for <name>",
+	privs = {server = true},
+	func = function(sender, param)
+		local name = param:split(" ")[1]
+		local x = tonumber(param:split(" ")[2])
+		local y = tonumber(param:split(" ")[3])
+		local z = tonumber(param:split(" ")[4])
+		if name and x and y and z and minetest.get_player_by_name(name) then
+			elidragon.skyblock.set_spawn(minetest.get_player_by_name(name), {x = x, y = y, z = z})
+		else
+			minetest.chat_send_player(sender, "Invalid usage or player not online")
+		end
 	end,
 })
